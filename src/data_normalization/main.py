@@ -52,7 +52,7 @@ def read_tsv(file_path: Path, columns: list[str]) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: The DataFrame containing the data from the TSV file.
-    
+
     Raises:
         FileNotFoundError: If the file does not exist at the specified path.
     """
@@ -94,10 +94,10 @@ def read_raw_data(data_folder_path: Path, only_embeddings: bool=False, suffix: s
         tuple: A tuple containing two dictionaries:
             - A dictionary of DataFrames with keys for 'news' and 'behaviors'.
             - A dictionary of embeddings with keys for 'entity_embedding' and 'relation_embedding'.
-    
+
     Raises:
         FileNotFoundError: If any of the expected files are missing in the dataset folder.
-    """ 
+    """
     data = {}
     embeddings = {}
 
@@ -107,13 +107,13 @@ def read_raw_data(data_folder_path: Path, only_embeddings: bool=False, suffix: s
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found at {file_path}")
             data[f"{file_key}{suffix}"] = read_tsv(file_path, file_info["columns"])
-    
+
     for file_key, file_info in MIND_EMBEDDING_FILES.items():
         file_path = data_folder_path / file_info["filename"]
         if not file_path.exists():
             raise FileNotFoundError(f"File not found at {file_path}")
         embeddings[f"{file_key}{suffix}"] = read_embedding(file_path)
-    
+
     return data, embeddings
 
 def normalize_behavior(data: dict[str, pd.DataFrame], suffix: str='') -> dict[str, pd.DataFrame]:
@@ -136,16 +136,16 @@ def normalize_behavior(data: dict[str, pd.DataFrame], suffix: str='') -> dict[st
     # Convert space-separated strings into lists
     behaviors_df['History'] = behaviors_df['History'].str.split()
     behaviors_df['Impressions'] = behaviors_df['Impressions'].str.split()
-    
+
     # Expand lists into multiple rows
     history_df = behaviors_df[['Impression ID', 'History']].explode('History')
     impressions_df = behaviors_df[['Impression ID', 'Impressions']].explode('Impressions')
-    
+
     # Split each impression entry (e.g., "news_id-clicked") into two separate columns
     impressions_df['Impressions'] = impressions_df['Impressions'].str.split('-')
     impressions_df[['News ID', 'Clicked']] = pd.DataFrame(impressions_df['Impressions'].tolist(), index=impressions_df.index)
     impressions_df.drop(columns=['Impressions'], inplace=True)
-    
+
     return {**data, f"history{suffix}": history_df, f"impressions{suffix}": impressions_df}
 
 def normalize_news(data: dict[str, pd.DataFrame], suffix: str='') -> dict[str, pd.DataFrame]:
@@ -164,7 +164,7 @@ def normalize_news(data: dict[str, pd.DataFrame], suffix: str='') -> dict[str, p
         dict[str, pd.DataFrame]: The updated data dictionary including the normalized entity tables.
     """
     news_df = data[f"news{suffix}"]
-    
+
     # Convert string representations of lists into actual lists and replace NaN values with empty lists
     news_df['Title Entities'] = news_df['Title Entities'].where(news_df['Title Entities'].notna(), '[]').apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     news_df['Abstract Entities'] = news_df['Abstract Entities'].where(news_df['Abstract Entities'].notna(), '[]').apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
@@ -179,7 +179,7 @@ def normalize_news(data: dict[str, pd.DataFrame], suffix: str='') -> dict[str, p
 
     return {**data, f"title_entities{suffix}": title_entities_df, f"abstract_entities{suffix}": abstract_entities_df}
 
-def data_normalization(validation: bool=False, try_load: bool=True, save: bool=False) -> dict[str, pd.DataFrame]:
+def data_normalization(validation: bool=False, try_load: bool=True, save: bool=False) -> tuple[dict[str, pd.DataFrame], dict[str, dict]]:
     """
     Normalizes and loads or saves the data depending on whether pre-normalized files exist.
 
@@ -193,7 +193,7 @@ def data_normalization(validation: bool=False, try_load: bool=True, save: bool=F
         save (bool): If True, saves the normalized data into the 'data_normalized' folder.
 
     Returns:
-        dict: A dictionary containing the normalized data and embeddings.
+        TODO
     """
     data_folder_path = get_data_folder_path()
     save_subfolder = data_folder_path / 'data_normalized'
@@ -207,12 +207,12 @@ def data_normalization(validation: bool=False, try_load: bool=True, save: bool=F
             if file.is_file() and file.suffix == ".csv":
                 data[file.stem] = pd.read_csv(file)
         _, embeddings = read_raw_data(read_subfolder, only_embeddings=True, suffix=suffix)
-    
+
     else:
         data, embeddings = read_raw_data(read_subfolder, suffix=suffix)
         data = normalize_behavior(data, suffix=suffix)
         data = normalize_news(data, suffix=suffix)
-        
+
         if save:
             save_subfolder.mkdir(parents=True, exist_ok=True)
             for key, df in data.items():
