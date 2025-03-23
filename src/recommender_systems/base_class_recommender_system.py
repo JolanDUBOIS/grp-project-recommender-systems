@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
 
 import pandas as pd
+import numpy as np
 
 
 class RecommenderSystem(ABC):
     """ Abstract class for recommender systems. """
-    
+
     def __init__(self):
         pass
 
     @abstractmethod
-    def fit(self, data: dict[str, pd.DataFrame]):
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
         pass
 

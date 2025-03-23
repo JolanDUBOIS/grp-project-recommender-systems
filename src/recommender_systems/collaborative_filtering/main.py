@@ -24,7 +24,7 @@ class ALSMatrixFactorization(RecommenderSystem):
     def __init__(self):
         """ TODO """
 
-    def fit(self, data: dict[str, pd.DataFrame]):
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
         # print(f"Type data: {type(data)}")
         self.data = data
@@ -59,7 +59,7 @@ class ALSMatrixFactorization(RecommenderSystem):
         np.random.shuffle(items_indices)
         split_users_indices = np.array_split(users_indices, self.SPLIT)
         split_items_indices = np.array_split(items_indices, self.SPLIT)
-        
+
         for k in range(self.N_ITER):
             print(f"Iteration {k} / {self.N_ITER}")
             split_number = k % self.SPLIT
