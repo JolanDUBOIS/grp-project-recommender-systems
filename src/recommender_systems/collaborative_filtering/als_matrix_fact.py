@@ -23,38 +23,18 @@ class ALSMatrixFactorization(RecommenderSystem):
     
     def __init__(self):
         """ TODO """
+        super().__init__()
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
-        # print(f"Type data: {type(data)}")
-        self.data = data
-        behaviors_df = self.data['behaviors']
-        news_df = self.data['news']
-        impressions_df = self.data['impressions']
-
-        self.users_ids = behaviors_df['User ID'].unique()
-        self.news_ids = news_df['News ID'].unique()
+        R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
         
-        user_id_mapping = {user_id: idx for idx, user_id in enumerate(self.users_ids)}
-        news_id_mapping = {news_id: idx for idx, news_id in enumerate(self.news_ids)}
-        
-        interactions_df = pd.merge(impressions_df, behaviors_df, on='Impression ID', how='left')
-        interactions_df = interactions_df[['User ID', 'News ID', 'Clicked']]
-
-        interactions_df['User Index'] = interactions_df['User ID'].map(user_id_mapping)
-        interactions_df['News Index'] = interactions_df['News ID'].map(news_id_mapping)
-        
-        R = csr_matrix(
-            (interactions_df['Clicked'], (interactions_df['User Index'], interactions_df['News Index'])),
-            shape=(len(self.users_ids), len(self.news_ids))
-        )
-        
-        U = np.random.normal(loc=0.0, scale=0.01, size=(len(self.users_ids), self.LATENT_FACTORS))
-        V = np.random.normal(loc=0.0, scale=0.01, size=(len(self.news_ids), self.LATENT_FACTORS))
+        U = np.random.normal(loc=0.0, scale=0.01, size=(len(user_id_mapping), self.LATENT_FACTORS))
+        V = np.random.normal(loc=0.0, scale=0.01, size=(len(news_id_mapping), self.LATENT_FACTORS))
         
         np.random.seed(42)
-        users_indices = np.arange(len(self.users_ids))
-        items_indices = np.arange(len(self.news_ids))
+        users_indices = np.arange(len(user_id_mapping))
+        items_indices = np.arange(len(news_id_mapping))
         np.random.shuffle(users_indices)
         np.random.shuffle(items_indices)
         split_users_indices = np.array_split(users_indices, self.SPLIT)

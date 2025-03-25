@@ -1,1 +1,1 @@
-from .main import ALSMatrixFactorization
+from .als_matrix_fact import ALSMatrixFactorization
