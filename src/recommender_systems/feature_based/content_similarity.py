@@ -19,12 +19,15 @@ class ContentBasedFiltering(RecommenderSystem):
         R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
 
         # Get news embeddings
-        news_df = data['news']
+        news_df = data['news'].copy()
         news_df["idx"] = news_df["News ID"].map(news_id_mapping)
+        news_df = news_df.dropna(subset=["idx"])
+        news_df["idx"] = news_df["idx"].astype(int)
         news_df.sort_values(by="idx", ascending=True, inplace=True)
         news_df["content"] = news_df["Title"] + " " + news_df["Abstract"]
+        news_df["content"] = news_df["content"].fillna("")
         vectorizer = TfidfVectorizer(max_features=20)
-        article_embeddings = vectorizer.fit_transform(data["news"]["content"]).toarray()
+        article_embeddings = vectorizer.fit_transform(news_df["content"]).toarray()
         Sim = cosine_similarity(article_embeddings)
 
         self.user_id_mapping = user_id_mapping
@@ -42,7 +45,7 @@ class ContentBasedFiltering(RecommenderSystem):
             user_idx = self.user_id_mapping[user_id]
             user_vector = self.R.getrow(user_idx)
             product = user_vector.dot(self.Sim)
-            scores = product.toarray().flatten()
+            scores = product.flatten()
 
             # Score items already seen by the user to -inf
             scores[user_vector.toarray().flatten() == 1] = -np.inf
