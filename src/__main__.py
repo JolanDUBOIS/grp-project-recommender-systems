@@ -2,6 +2,7 @@ import argparse
 
 from src.data_normalization import data_normalization
 from src.recommender_systems.collaborative_filtering import ALSMatrixFactorization
+import src.evaluation.main as evaluation_module
 
 
 def setup_args():
@@ -24,6 +25,6 @@ if __name__ == "__main__":
     if args.test:
         print("Running data normalization...")
         data, embeddings = data_normalization(validation=False, try_load=True)
-        print("Running ALS matrix factorization...")
-        rs = ALSMatrixFactorization()
-        rs.fit(data)
+        print("Running validation")
+        evaluation_module.sliding_window_workflow(data, embeddings, model_type="itemitem", TIME_WINDOW=86400)
+

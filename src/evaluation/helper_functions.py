@@ -15,7 +15,6 @@ def split_data(df, time_col, time_window):
               and values are DataFrames for each bucket.
     """
     # Ensure timestamp column is in datetime format
-    df[time_col] = df.sort_values(time_col)
     df[time_col] = pd.to_datetime(df[time_col])
 
     # Determine the minimum timestamp to start bucketing
@@ -38,37 +37,31 @@ def split_data(df, time_col, time_window):
 
     return indexed_buckets
 
-def get_arranged_validation_data(validation_bucket):
-    behaviour = validation_bucket['behaviors']
-    impressions = validation_bucket['Impressions']
-
+def get_arranged_validation_data(validation_bucket, impressions):
     impression_ids = validation_bucket["Impression ID"]
     impression_data = impressions[impressions["Impression ID"].isin(impression_ids)]
 
-    df_merged = impression_data.merge(behaviour[["Impression ID", "User ID", "Time"]], on="Impression ID")
+    df_merged = impression_data.merge(validation_bucket[["Impression ID", "User ID", "Time"]], on="Impression ID")
+    df_merged = df_merged[df_merged["Clicked"] == 1]
 
-    ## to be completed
+    df_merged.drop(columns=["Impression ID", "Clicked"], inplace=True)
+    df_merged = df_merged[["User ID", "News ID", "Time"]]
 
+    df_merged = df_merged.sort_values(by="User ID")
+    df_merged = df_merged.reset_index(drop=True)
 
-def calculate_accuracy(df_true, df_pred):
-    """
-    Computes accuracy between two DataFrames with User IDs as rows and News IDs as columns.
+    df_merged = (
+        df_merged
+        .groupby("User ID")["News ID"]
+        .agg(list)
+        .reset_index()
+        .rename(columns={"News ID": "News IDs"})
+    )
 
-    Parameters:
-        df_true (pd.DataFrame): Ground truth DataFrame (actual clicks).
-        df_pred (pd.DataFrame): Predicted DataFrame (recommended clicks).
+    return df_merged
 
-    Returns:
-        float: Accuracy value (0 to 1).
-    """
-    # Ensure both DataFrames have the same shape
-    if df_true.shape != df_pred.shape:
-        raise ValueError("DataFrames must have the same shape to compute accuracy")
-
-    # Exclude the "User ID" column for element-wise comparison
-    matches = (df_true.iloc[:, 1:] == df_pred.iloc[:, 1:]).sum().sum()
-    total_elements = df_true.iloc[:, 1:].size  # Total predictions made
-
-    # Compute accuracy
-    accuracy = matches / total_elements
-    return accuracy
+def precision_at_k(predicted, actual, k=10):
+    predicted_at_k = predicted[:k]
+    relevant = set(predicted_at_k) & set(actual)
+    precision = len(relevant) / k
+    return precision
