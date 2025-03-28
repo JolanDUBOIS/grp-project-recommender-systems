@@ -4,7 +4,6 @@ from datetime import datetime
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
 
 from src.recommender_systems import RecommenderSystem
 
@@ -27,14 +26,14 @@ class ALSMatrixFactorization(RecommenderSystem):
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
-        R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
+        self.R, self.user_id_mapping, self.news_id_mapping = self.get_user_item_interaction_matrix(data)
         
-        U = np.random.normal(loc=0.0, scale=0.01, size=(len(user_id_mapping), self.LATENT_FACTORS))
-        V = np.random.normal(loc=0.0, scale=0.01, size=(len(news_id_mapping), self.LATENT_FACTORS))
+        self.U = np.random.normal(loc=0.0, scale=0.01, size=(len(self.user_id_mapping), self.LATENT_FACTORS))
+        self.V = np.random.normal(loc=0.0, scale=0.01, size=(len(self.news_id_mapping), self.LATENT_FACTORS))
         
         np.random.seed(42)
-        users_indices = np.arange(len(user_id_mapping))
-        items_indices = np.arange(len(news_id_mapping))
+        users_indices = np.arange(len(self.user_id_mapping))
+        items_indices = np.arange(len(self.news_id_mapping))
         np.random.shuffle(users_indices)
         np.random.shuffle(items_indices)
         split_users_indices = np.array_split(users_indices, self.SPLIT)
@@ -46,25 +45,53 @@ class ALSMatrixFactorization(RecommenderSystem):
             users_subset = split_users_indices[split_number]
             items_subset = split_items_indices[split_number]
             t1 = time.time()
-            U = self._update_user_factors(U, V, R, users_subset)
-            V = self._update_item_factors(U, V, R, items_subset)
+            self.U = self._update_user_factors(self.U, self.V, self.R, users_subset)
+            self.V = self._update_item_factors(self.U, self.V, self.R, items_subset)
             t2 = time.time()
             print(f"Iteration took {int(t2 - t1)}s.")
-        
-        self.save(U, V)
+
+        self.save(self.U, self.V)  # Save the model (temporary)
+
+    def read_model(self, U_path: str, V_path: str):
+        """ Read a model """
+        self.U = np.load(U_path)
+        self.V = np.load(V_path)
+        print("Model loaded, no need to fit.")
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
         """ TODO """
         if self.U is None or self.V is None:
             raise ValueError("Model not trained. Call fit() first.")
-        user_predictions = np.dot(self.U[user_id], self.V.T)
-        top_items = np.argsort(user_predictions)[::-1][:k]
-        return top_items
+
+        # Get the user index
+        user_idx = self.user_id_mapping[user_id]
+
+        # Compute the predictions
+        user_predictions = np.dot(self.U[user_idx], self.V.T)
+
+        user_items = self.R.getrow(user_idx).toarray().flatten()
+        multiplier = 2
+        while True:
+            # Get the top 2*k items
+            top_items_idx = np.argsort(user_predictions)[::-1][:multiplier*k]
+
+            # Filter out items already seen by the user
+            top_items_idx = [idx for idx in top_items_idx if user_items[idx] == 0]
+            if len(top_items_idx) >= k:
+                top_k_idx = top_items_idx[:k]
+
+                # Get the news ids
+                reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
+                top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
+
+                return top_items
+
+            multiplier += 1
         
     def evaluate(self):
         """ TODO """
 
-    def _update_user_factors(self, U: np.ndarray, V: np.ndarray, R: csr_matrix, subset: np.ndarray=None) -> np.ndarray:
+    def _update_user_factors(self, U: np.ndarray, V: np.ndarray, subset: np.ndarray=None) -> np.ndarray:
         """ TODO """
         print("Update user factors")
         if subset is None:
@@ -72,12 +99,12 @@ class ALSMatrixFactorization(RecommenderSystem):
         
         new_U = np.zeros_like(U)
         for i in tqdm(subset):
-            R_i = R.getrow(i).toarray().flatten()
+            R_i = self.R.getrow(i).toarray().flatten()
             masked_V = V * R_i[:, np.newaxis]
             new_U[i, :] = np.linalg.solve(V.T @ masked_V + self.REGULARIZATION_PARAMS['lambda_U'] * np.eye(self.LATENT_FACTORS), V.T @ R_i)
         return new_U
 
-    def _update_item_factors(self, U: np.ndarray, V: np.ndarray, R: csr_matrix, subset: np.ndarray=None) -> np.ndarray:
+    def _update_item_factors(self, U: np.ndarray, V: np.ndarray, subset: np.ndarray=None) -> np.ndarray:
         """ TODO """
         print("Update item factors")
         if subset is None:
@@ -85,7 +112,7 @@ class ALSMatrixFactorization(RecommenderSystem):
 
         new_V = np.zeros_like(V)
         for i in tqdm(subset):
-            R_i = R.getcol(i).toarray().flatten()
+            R_i = self.R.getcol(i).toarray().flatten()
             masked_U = U * R_i[:, np.newaxis]
             new_V[i, :] = np.linalg.solve(U.T @ masked_U + self.REGULARIZATION_PARAMS['lambda_V'] * np.eye(self.LATENT_FACTORS), U.T @ R_i)
         return new_V

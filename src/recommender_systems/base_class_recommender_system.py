@@ -19,7 +19,7 @@ class RecommenderSystem(ABC):
     @abstractmethod
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
         """ TODO """
-        pass
+        return np.random.choice(self.data["news"]["News ID"], size=k, replace=False).tolist()
 
     @abstractmethod
     def evaluate(self):   # TODO: Add parameters to this method
