@@ -26,24 +26,28 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
         """ TODO """
-        if self.R is None or self.Sim is None:
-            raise ValueError("Model not trained. Call fit() first.")
+        try:
+            if self.R is None or self.Sim is None:
+                raise ValueError("Model not trained. Call fit() first.")
 
-        # Compute scores
-        user_idx = self.user_id_mapping[user_id]
-        user_vector = self.R.getrow(user_idx)
-        product = user_vector.dot(self.Sim)
-        scores = product.toarray().flatten()
+            # Compute scores
+            user_idx = self.user_id_mapping[user_id]
+            user_vector = self.R.getrow(user_idx)
+            product = user_vector.dot(self.Sim)
+            scores = product.toarray().flatten()
 
-        # Score items already seen by the user to -inf
-        scores[user_vector.toarray().flatten() == 1] = -np.inf
+            # Score items already seen by the user to -inf
+            scores[user_vector.toarray().flatten() == 1] = -np.inf
 
-        # Get top k items
-        top_k_idx = scores.argsort()[::-1][:k]
-        reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
-        top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
+            # Get top k items
+            top_k_idx = scores.argsort()[::-1][:k]
+            reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
+            top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
 
-        return top_items
+            return top_items
+        except Exception as e:
+            print(f"Error in prediction: {e}")
+            return super().predict(user_id, time, k)
 
     def evaluate(self):
         """ Evaluate the model on the data. """
