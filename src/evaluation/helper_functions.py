@@ -65,3 +65,20 @@ def precision_at_k(predicted, actual, k=10):
     relevant = set(predicted_at_k) & set(actual)
     precision = len(relevant) / k
     return precision
+
+def recall_at_k(predicted, actual, k=10):
+    if not actual:
+        return 0.0  # avoid division by zero
+    predicted_at_k = predicted[:k]
+    relevant = set(predicted_at_k) & set(actual)
+    recall = len(relevant) / len(actual)
+    return recall
+
+
+def mrr_at_k(predicted, actual, k=10):
+    predicted_at_k = predicted[:k]
+    for rank, item in enumerate(predicted_at_k, start=1):
+        if item in actual:
+            return 1.0 / rank
+    return 0.0
+

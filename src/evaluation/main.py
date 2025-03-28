@@ -8,49 +8,6 @@ import src.evaluation.helper_functions as helper
 
 K = 10
 
-def compare_baseline_als():
-    """ Compare the baseline and ALS matrix factorization models. """
-    # Load the data
-    data, _ = data_normalization(validation=False, try_load=True)
-
-    # Initialize the models
-    baseline = BaselineMostClicked()
-    als = ALSMatrixFactorization()
-
-    # Split the data
-    data['behaviors'] = data['behaviors'].sort_values('Time')
-    split_index = int(0.8 * len(data['behaviors']))
-    data_train = {
-        'behaviors': data['behaviors'].iloc[:split_index],
-        'Impressions': data['Impressions'],
-        'news': data['news'],
-        'History': data['History'],
-        'Title entities': data['Title entities'],
-        'Abstract entities': data['Abstract entities'],
-
-    }
-    data_test = {
-        'behaviors': data['behaviors'].iloc[split_index:],
-        'Impressions': data['Impressions'],
-        'news': data['news'],
-        'History': data['History'],
-        'Title entities': data['Title entities'],
-        'Abstract entities': data['Abstract entities'],
-    }
-
-    # Fit the models
-    baseline.fit(data_train)
-    als.fit(data_train)
-
-    # Predict
-    user_id = 'U13740'
-    time = data_test['behaviors']['Time'].iloc[0]
-    k = 10
-    baseline_recommendations = baseline.predict(user_id, time, k)
-    als_recommendations = als.predict(user_id, time, k)
-
-    # Compare
-
 ### takes model_type as an argument - that is the model that is being trained and tested
 ### default TIME_WINDOW - 1 day (in seconds)
 def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW=86400):
@@ -87,6 +44,8 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         user_ids = training_bucket["User ID"].tolist()
 
         precision_sum = 0
+        recall_sum = 0
+        mrr_sum = 0
 
         for user_id in user_ids:
             prediction = model.predict(user_id, data['behaviors']['Time'].iloc[0], K)
@@ -98,6 +57,14 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
             )
 
             precision_sum += helper.precision_at_k(prediction, actual, k=K)
+            recall_sum  += helper.recall_at_k(prediction, actual, k=K)
+            mrr_sum += helper.mrr_at_k(prediction, actual, k=K)
 
         average_precision = precision_sum / len(user_ids)
         print(f"Average Precision@{K}: {average_precision:.4f}")
+
+        average_recall = recall_sum / len(user_ids)
+        print(f"Average Recall@{K}: {average_recall:.4f}")
+
+        average_mrr = mrr_sum / len(user_ids)
+        print(f"Average MRR@{K}: {average_mrr:.4f}")

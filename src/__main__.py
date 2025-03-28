@@ -26,5 +26,4 @@ if __name__ == "__main__":
         print("Running data normalization...")
         data, embeddings = data_normalization(validation=False, try_load=True)
         print("Running validation")
-        evaluation_module.sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW=86400)
-
+        evaluation_module.sliding_window_workflow(data, embeddings, model_type="itemitem", TIME_WINDOW=86400)
