@@ -13,6 +13,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
+        super().fit(data, embeddings)
         # Get the user-item interaction matrix
         R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
 

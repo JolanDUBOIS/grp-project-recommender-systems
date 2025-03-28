@@ -12,7 +12,7 @@ class BaselineMostClicked(RecommenderSystem):
         """ Initialize the model. """
         self.N = N
     
-    def fit(self, data: dict[str, pd.DataFrame]):
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
         """ Fit the model to the data. """
         self.data = data
 
