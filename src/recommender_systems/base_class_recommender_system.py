@@ -14,7 +14,8 @@ class RecommenderSystem(ABC):
     @abstractmethod
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
-        pass
+        self.data = data
+        self.embeddings = embeddings
 
     @abstractmethod
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
