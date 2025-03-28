@@ -10,6 +10,10 @@ pandas = "^2.2.3"
 ipykernel = "^6.29.5"
 pytest = "^8.3.4"
 scipy = "^1.15.1"
+tqdm = "^4.67.1"
+scikit-learn = "^1.6.1"
+matplotlib = "^3.10.1"
+xgboost = "^3.0.0"
 
 [tool.poetry.dev-dependencies]
 
