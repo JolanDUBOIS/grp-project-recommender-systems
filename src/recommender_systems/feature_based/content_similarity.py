@@ -1,0 +1,86 @@
+import numpy as np
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+from src.recommender_systems import RecommenderSystem
+
+
+class ContentBasedFiltering(RecommenderSystem):
+    """ TODO """
+    
+    def __init__(self):
+        """ TODO """
+
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
+        """ Fit the model to the data. """
+        super().fit(data, embeddings)
+        # Get the user-item interaction matrix
+        R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
+
+        # Get news embeddings
+        news_df = data['news']
+        news_df["idx"] = news_df["News ID"].map(news_id_mapping)
+        news_df.sort_values(by="idx", ascending=True, inplace=True)
+        news_df["content"] = news_df["Title"] + " " + news_df["Abstract"]
+        vectorizer = TfidfVectorizer(max_features=20)
+        article_embeddings = vectorizer.fit_transform(data["news"]["content"]).toarray()
+        Sim = cosine_similarity(article_embeddings)
+
+        self.user_id_mapping = user_id_mapping
+        self.news_id_mapping = news_id_mapping
+        self.R = R
+        self.Sim = Sim
+
+    def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
+        """ TODO """
+        try:
+            if self.R is None or self.Sim is None:
+                raise ValueError("Model not trained. Call fit() first.")
+
+            # Compute scores
+            user_idx = self.user_id_mapping[user_id]
+            user_vector = self.R.getrow(user_idx)
+            product = user_vector.dot(self.Sim)
+            scores = product.toarray().flatten()
+
+            # Score items already seen by the user to -inf
+            scores[user_vector.toarray().flatten() == 1] = -np.inf
+
+            # Get top k items
+            top_k_idx = scores.argsort()[::-1][:k]
+            reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
+            top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
+
+            return top_items
+        except Exception as e:
+            print(f"Error in prediction: {e}")
+            return super().predict(user_id, time, k)
+
+    def evaluate(self):
+        """ Evaluate the model on the data. """
+        pass
+
+if __name__ == "__main__":
+    print("Running tests for ContentBasedFiltering...")
+
+    # Load data
+    from src.data_normalization import data_normalization
+    data, embeddings = data_normalization(validation=False, try_load=True)
+
+    # Create model
+    rs = ContentBasedFiltering()
+
+    # Fit model
+    print("Fitting model...")
+    rs.fit(data, embeddings)
+
+    # Predict
+    N = 10
+    user_ids = data["behaviors"]["User ID"].drop_duplicates().sample(n=N, random_state=42)
+
+    print(f"Predicting for {N} users...")
+    for user_id in user_ids:
+        print(f"User ID: {user_id}")
+        print(rs.predict(user_id, pd.Timestamp.now()))
+        print()
