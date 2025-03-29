@@ -10,6 +10,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
 
     def __init__(self):
         """ TODO """
+        super().__init__()
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
@@ -38,7 +39,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
             scores = product.toarray().flatten()
 
             # Score items already seen by the user to -inf
-            scores[user_vector.toarray().flatten() == 1] = -np.inf
+            scores[user_vector.toarray().flatten() != 0] = -np.inf
 
             # Get top k items
             top_k_idx = scores.argsort()[::-1][:k]
