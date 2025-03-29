@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
+from sklearn.metrics.pairwise import cosine_similarity # type: ignore
 
 from src.recommender_systems import RecommenderSystem
 
@@ -11,6 +11,7 @@ class ContentBasedFiltering(RecommenderSystem):
     
     def __init__(self):
         """ TODO """
+        super().__init__()
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
         """ Fit the model to the data. """
