@@ -2,7 +2,10 @@ import os, ast
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 SMALL_MIND_SETS = {
     "train": "MINDsmall_train",

@@ -1,25 +1,35 @@
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer # type: ignore
+from sklearn.metrics.pairwise import cosine_similarity # type: ignore
 
 from src.recommender_systems import RecommenderSystem
 
 
-class ItemItemCollaborativeFiltering(RecommenderSystem):
+class ContentBasedFiltering(RecommenderSystem):
     """ TODO """
-
+    
     def __init__(self):
         """ TODO """
         super().__init__()
 
-    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
         """ Fit the model to the data. """
         super().fit(data, embeddings)
         # Get the user-item interaction matrix
         R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
 
-        # Get item-item similarity matrix (cosine similarity)
-        Sim = self.cosine_similarity(R)
+        # Get news embeddings
+        news_df = data['news'].copy()
+        news_df["idx"] = news_df["News ID"].map(news_id_mapping)
+        news_df = news_df.dropna(subset=["idx"])
+        news_df["idx"] = news_df["idx"].astype(int)
+        news_df.sort_values(by="idx", ascending=True, inplace=True)
+        news_df["content"] = news_df["Title"] + " " + news_df["Abstract"]
+        news_df["content"] = news_df["content"].fillna("")
+        vectorizer = TfidfVectorizer(max_features=20)
+        article_embeddings = vectorizer.fit_transform(news_df["content"]).toarray()
+        Sim = cosine_similarity(article_embeddings)
 
         self.user_id_mapping = user_id_mapping
         self.news_id_mapping = news_id_mapping
@@ -36,10 +46,10 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
             user_idx = self.user_id_mapping[user_id]
             user_vector = self.R.getrow(user_idx)
             product = user_vector.dot(self.Sim)
-            scores = product.toarray().flatten()
+            scores = product.flatten()
 
             # Score items already seen by the user to -inf
-            scores[user_vector.toarray().flatten() != 0] = -np.inf
+            scores[user_vector.toarray().flatten() == 1] = -np.inf
 
             # Get top k items
             top_k_idx = scores.argsort()[::-1][:k]
@@ -55,26 +65,15 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
         """ Evaluate the model on the data. """
         pass
 
-    @staticmethod
-    def cosine_similarity(R: csr_matrix, axis: int=0) -> csr_matrix:
-        """ TODO """
-        norms = np.sqrt(R.power(2).sum(axis=axis))
-        norms = np.array(norms).flatten()
-        norms[norms == 0] = 1 # Avoid division
-        similarity = R.T @ R
-        similarity = similarity.multiply(1 / norms).multiply(1 / norms.T)
-        similarity = csr_matrix(similarity)
-        return similarity
-
 if __name__ == "__main__":
-    print("Running tests for ItemItemCollaborativeFiltering...")
+    print("Running tests for ContentBasedFiltering...")
 
     # Load data
     from src.data_normalization import data_normalization
     data, embeddings = data_normalization(validation=False, try_load=True)
 
     # Create model
-    rs = ItemItemCollaborativeFiltering()
+    rs = ContentBasedFiltering()
 
     # Fit model
     print("Fitting model...")

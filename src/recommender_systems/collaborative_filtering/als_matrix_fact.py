@@ -26,6 +26,7 @@ class ALSMatrixFactorization(RecommenderSystem):
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
+        super().fit(data, embeddings)
         self.R, self.user_id_mapping, self.news_id_mapping = self.get_user_item_interaction_matrix(data)
         
         self.U = np.random.normal(loc=0.0, scale=0.01, size=(len(self.user_id_mapping), self.LATENT_FACTORS))
@@ -60,33 +61,37 @@ class ALSMatrixFactorization(RecommenderSystem):
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
         """ TODO """
-        if self.U is None or self.V is None:
-            raise ValueError("Model not trained. Call fit() first.")
+        try:
+            if self.U is None or self.V is None:
+                raise ValueError("Model not trained. Call fit() first.")
 
-        # Get the user index
-        user_idx = self.user_id_mapping[user_id]
+            # Get the user index
+            user_idx = self.user_id_mapping[user_id]
 
-        # Compute the predictions
-        user_predictions = np.dot(self.U[user_idx], self.V.T)
+            # Compute the predictions
+            user_predictions = np.dot(self.U[user_idx], self.V.T)
 
-        user_items = self.R.getrow(user_idx).toarray().flatten()
-        multiplier = 2
-        while True:
-            # Get the top 2*k items
-            top_items_idx = np.argsort(user_predictions)[::-1][:multiplier*k]
+            user_items = self.R.getrow(user_idx).toarray().flatten()
+            multiplier = 2
+            while True:
+                # Get the top 2*k items
+                top_items_idx = np.argsort(user_predictions)[::-1][:multiplier*k]
 
-            # Filter out items already seen by the user
-            top_items_idx = [idx for idx in top_items_idx if user_items[idx] == 0]
-            if len(top_items_idx) >= k:
-                top_k_idx = top_items_idx[:k]
+                # Filter out items already seen by the user
+                top_items_idx = [idx for idx in top_items_idx if user_items[idx] == 0]
+                if len(top_items_idx) >= k:
+                    top_k_idx = top_items_idx[:k]
 
-                # Get the news ids
-                reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
-                top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
+                    # Get the news ids
+                    reverse_news_id_mapping = {idx: news_id for news_id, idx in self.news_id_mapping.items()}
+                    top_items = [reverse_news_id_mapping[idx] for idx in top_k_idx]
 
-                return top_items
+                    return top_items
 
-            multiplier += 1
+                multiplier += 1
+        except Exception as e:
+            print(f"Error in prediction: {e}")
+            return super().predict(user_id, time, k)
         
     def evaluate(self):
         """ TODO """
