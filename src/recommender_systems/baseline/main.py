@@ -20,6 +20,7 @@ class BaselineMostClicked(RecommenderSystem):
         """ TODO """
         time_window_start = time - pd.Timedelta(hours=self.N)
         behaviors_df = self.data['behaviors']
+        behaviors_df['Time'] = pd.to_datetime(behaviors_df['Time'])
         filtered_behaviors_df = behaviors_df[
             (behaviors_df['Time'] >= time_window_start)
             & (behaviors_df['Time'] <= time)
