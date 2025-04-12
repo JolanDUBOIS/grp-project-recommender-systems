@@ -53,4 +53,27 @@ class BaselineRingBuffer(RecommenderSystem):
     
     def evaluate(self):
         """ TODO """
+
+if __name__ == "__main__":
+    print("Running tests for BaselineMostClicked...")
     
+    # Load data
+    from src.data_normalization import data_normalization
+    data, embeddings = data_normalization(validation=False, try_load=True)
+    
+    # Create model
+    rs_most_clicked = BaselineMostClicked()
+    rs_most_clicked.fit(data, embeddings)
+    
+    # Predict
+    N = 10
+    user_ids = data["behaviors"]["User ID"].drop_duplicates().sample(n=N, random_state=42)
+    
+    print(f"Predicting for {N} users...")
+    # Random time in data["behaviors"]['Time']
+    prediction_time = data['behaviors']['Time'].drop_duplicates().sample(n=1, random_state=42).values[0]
+    prediction_time = pd.to_datetime(prediction_time)
+    for user_id in user_ids:
+        print(f"User ID: {user_id}")
+        print(rs_most_clicked.predict(user_id, prediction_time))
+        print()
