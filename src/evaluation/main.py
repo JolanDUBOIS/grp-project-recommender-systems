@@ -3,6 +3,8 @@ import pandas as pd
 from src.recommender_systems.baseline import BaselineMostClicked
 from src.recommender_systems.collaborative_filtering.als_matrix_fact import ALSMatrixFactorization
 from src.recommender_systems.collaborative_filtering.item_item import ItemItemCollaborativeFiltering
+from src.recommender_systems.hybrid.hybrid_item_item import HybridItemItemCollabFiltering
+from src.recommender_systems.feature_based.content_similarity import ContentBasedFiltering
 from src.data_normalization import data_normalization
 import src.evaluation.helper_functions as helper
 
@@ -21,7 +23,9 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
     elif model_type == "itemitem":
         model = ItemItemCollaborativeFiltering()
     elif model_type == "hybrid":
-        raise ("this will be used for hybrid approach - not implemented yet!")
+        model = HybridItemItemCollabFiltering()
+    elif model_type == "content_based":
+        model = ContentBasedFiltering()
     else:
         model = BaselineMostClicked()
 
