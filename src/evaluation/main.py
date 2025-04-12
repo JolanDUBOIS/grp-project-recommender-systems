@@ -46,6 +46,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         precision_sum = 0
         recall_sum = 0
         mrr_sum = 0
+        countable_users = 0
 
         for user_id in user_ids:
             prediction = model.predict(user_id, data['behaviors']['Time'].iloc[0], K)
@@ -56,15 +57,17 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
                 else []
             )
 
-            precision_sum += helper.precision_at_k(prediction, actual, k=K)
-            recall_sum  += helper.recall_at_k(prediction, actual, k=K)
-            mrr_sum += helper.mrr_at_k(prediction, actual, k=K)
+            if len(actual) != 0:
+                countable_users += 1
+                precision_sum += helper.precision_at_k(prediction, actual, k=K)
+                recall_sum  += helper.recall_at_k(prediction, actual, k=K)
+                mrr_sum += helper.mrr_at_k(prediction, actual, k=K)
 
-        average_precision = precision_sum / len(user_ids)
+        average_precision = precision_sum / countable_users
         print(f"Average Precision@{K}: {average_precision:.4f}")
 
-        average_recall = recall_sum / len(user_ids)
+        average_recall = recall_sum / countable_users
         print(f"Average Recall@{K}: {average_recall:.4f}")
 
-        average_mrr = mrr_sum / len(user_ids)
+        average_mrr = mrr_sum / countable_users
         print(f"Average MRR@{K}: {average_mrr:.4f}")
