@@ -102,3 +102,5 @@ if __name__ == "__main__":
     for user_id in user_ids:
         print(f"\nUser: {user_id}")
         print(hybrid.predict(user_id, pd.Timestamp.now(), k=10))
+
+        
