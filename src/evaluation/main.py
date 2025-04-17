@@ -3,7 +3,7 @@ import pandas as pd
 from src.recommender_systems.baseline import BaselineMostClicked
 from src.recommender_systems.collaborative_filtering.als_matrix_fact import ALSMatrixFactorization
 from src.recommender_systems.collaborative_filtering.item_item import ItemItemCollaborativeFiltering
-from src.recommender_systems.hybrid.hybrid_item_item import HybridItemItemCollabFiltering
+from src.recommender_systems.hybrid.true_hybrid import TrueHybrid
 from src.recommender_systems.feature_based.content_similarity import ContentBasedFiltering
 from src.data_normalization import data_normalization
 import src.evaluation.helper_functions as helper
@@ -23,7 +23,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
     elif model_type == "itemitem":
         model = ItemItemCollaborativeFiltering()
     elif model_type == "hybrid":
-        model = HybridItemItemCollabFiltering()
+        model = TrueHybrid(alpha=0.6)
     elif model_type == "content_based":
         model = ContentBasedFiltering()
     else:
@@ -75,3 +75,21 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
 
         average_mrr = mrr_sum / countable_users
         print(f"Average MRR@{K}: {average_mrr:.4f}")
+
+
+def validation_set_workflow(model_type="baseline"):
+    data, embeddings = data_normalization(validation=False, try_load=True)
+    validation_data, validation_embeddings = data_normalization(validation=True, try_load=False)
+
+    if model_type == "baseline":
+        model = BaselineMostClicked()
+    elif model_type == "als":
+        model = ALSMatrixFactorization()
+    elif model_type == "itemitem":
+        model = ItemItemCollaborativeFiltering()
+    elif model_type == "hybrid":
+        model = TrueHybrid(alpha=0.6)
+    elif model_type == "content_based":
+        model = ContentBasedFiltering()
+    else:
+        model = BaselineMostClicked()

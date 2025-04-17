@@ -13,7 +13,7 @@ class ContentBasedFiltering(RecommenderSystem):
         """ TODO """
         super().__init__()
 
-    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
+    def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
         super().fit(data, embeddings)
         # Get the user-item interaction matrix
