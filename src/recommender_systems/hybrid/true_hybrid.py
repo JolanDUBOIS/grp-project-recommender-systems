@@ -12,8 +12,8 @@ class TrueHybrid(RecommenderSystem):
         """ TODO """
         super().__init__()
         self.alpha = alpha # Weight for combining predictions
-        self.cf_model = ItemItemCollaborativeFiltering
-        self.cb_model = ContentBasedFiltering
+        self.cf_model = ItemItemCollaborativeFiltering()
+        self.cb_model = ContentBasedFiltering()
     
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
         # Train both collaborative and content-based models
@@ -55,7 +55,7 @@ class TrueHybrid(RecommenderSystem):
         
         except Exception as e:
             print(f"Prediction error: {e}")
-            return self.cf_model.predict(user_id, ime, k)
+            return self.cf_model.predict(user_id, time, k)
 
     def evaluate(self):
         """ Evaluate the model on the data. """
@@ -71,6 +71,7 @@ class TrueHybrid(RecommenderSystem):
         interactions_df = interactions_df[['User ID', 'News ID', 'Clicked', 'Time']]
         interactions_df['Time'] = pd.to_datetime(interactions_df['Time'])
         interactions_df['timestamp'] = interactions_df['Time'].apply(lambda x: int(x.timestamp()))
+        interactions_df['timestamp'] = interactions_df['timestamp'].astype('int64')
         
         user_ids = interactions_df['User ID'].unique()
         news_ids = interactions_df['News ID'].unique()
@@ -80,6 +81,19 @@ class TrueHybrid(RecommenderSystem):
         
         interactions_df['User Index'] = interactions_df['User ID'].map(user_id_mapping)
         interactions_df['News Index'] = interactions_df['News ID'].map(news_id_mapping)
+
+        # For debugging
+        print("timestamp dtype:", interactions_df['timestamp'].dtype)
+        print("User Index dtype:", interactions_df['User Index'].dtype)
+        print("News Index dtype:", interactions_df['News Index'].dtype)
+
+        print("Any NaNs?")
+        print("timestamp:", interactions_df['timestamp'].isna().sum())
+        print("User Index:", interactions_df['User Index'].isna().sum())
+        print("News Index:", interactions_df['News Index'].isna().sum())
+
+        print("Example values:")
+        print(interactions_df[['timestamp', 'User Index', 'News Index']].head(10))
         
         # Interaction matrix
         R = csr_matrix(
