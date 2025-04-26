@@ -58,7 +58,6 @@ class ContentBasedFiltering(RecommenderSystem):
 
             return top_items
         except Exception as e:
-            print(f"Error in prediction: {e}")
             return super().predict(user_id, time, k)
 
     def evaluate(self):

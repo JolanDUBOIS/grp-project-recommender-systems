@@ -7,6 +7,7 @@ from src.recommender_systems.hybrid.true_hybrid import TrueHybrid
 from src.recommender_systems.feature_based.content_similarity import ContentBasedFiltering
 from src.data_normalization import data_normalization
 import src.evaluation.helper_functions as helper
+from tqdm import tqdm
 
 K = 10
 
@@ -23,7 +24,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
     elif model_type == "itemitem":
         model = ItemItemCollaborativeFiltering()
     elif model_type == "hybrid":
-        model = TrueHybrid(alpha=0.6)
+        model = TrueHybrid(alpha=0.5)
     elif model_type == "content_based":
         model = ContentBasedFiltering()
     else:
@@ -31,6 +32,9 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
 
     data_buckets = helper.split_data(data['behaviors'], 'Time', TIME_WINDOW)
     for i in range(len(data_buckets) - 1):
+        recommended_items = []
+        all_items = data['news']['News ID'].values
+
         training_bucket = data_buckets[i]
         validation_bucket = data_buckets[i + 1]
         processed_validation_data = helper.get_arranged_validation_data(validation_bucket, data["impressions"])
@@ -45,19 +49,21 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         }
 
         model.fit(training_data, embeddings)
-        user_ids = training_bucket["User ID"].tolist()
 
         precision_sum = 0
         recall_sum = 0
         mrr_sum = 0
+        acc_sum = 0
+        diversity_sum = 0
         countable_users = 0
 
-        for user_id in user_ids:
-            prediction = model.predict(user_id, data['behaviors']['Time'].iloc[0], K)
+        for index, row in tqdm(validation_bucket.iterrows(), total=validation_bucket.shape[0], desc="Making predictions:"):
+            prediction = model.predict(row["User ID"], row['Time'], K)
+            recommended_items.extend(prediction)
 
             actual = (
-                processed_validation_data.loc[processed_validation_data["User ID"] == user_id, "News IDs"].values[0]
-                if user_id in processed_validation_data["User ID"].values
+                processed_validation_data.loc[processed_validation_data["User ID"] == row["User ID"], "News IDs"].values[0]
+                if row["User ID"] in processed_validation_data["User ID"].values
                 else []
             )
 
@@ -66,6 +72,8 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
                 precision_sum += helper.precision_at_k(prediction, actual, k=K)
                 recall_sum  += helper.recall_at_k(prediction, actual, k=K)
                 mrr_sum += helper.mrr_at_k(prediction, actual, k=K)
+                acc_sum += helper.accuracy(prediction, actual)
+                diversity_sum += helper.calculate_diversity(prediction, data['news'])
 
         average_precision = precision_sum / countable_users
         print(f"Average Precision@{K}: {average_precision:.4f}")
@@ -76,11 +84,22 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         average_mrr = mrr_sum / countable_users
         print(f"Average MRR@{K}: {average_mrr:.4f}")
 
+        average_acc = acc_sum / countable_users
+        print(f"Average Accuracy: {average_acc:.4f}")
+
+        diversity_acc = diversity_sum / countable_users
+        print(f"Average Diversity@{K}: {diversity_acc:.4f}")
+
+        recommended_items = set(recommended_items)
+        coverage = helper.coverage(recommended_items, all_items)
+        print(f"Coverage: {coverage:.4f}")
+
+        diversity = helper.calculate_diversity(recommended_items, data["news"])
+        print(f"Average Diversity: {diversity:.4f}")
+
+
 
 def validation_set_workflow(model_type="baseline"):
-    data, embeddings = data_normalization(validation=False, try_load=True)
-    validation_data, validation_embeddings = data_normalization(validation=True, try_load=False)
-
     if model_type == "baseline":
         model = BaselineMostClicked()
     elif model_type == "als":
@@ -93,3 +112,61 @@ def validation_set_workflow(model_type="baseline"):
         model = ContentBasedFiltering()
     else:
         model = BaselineMostClicked()
+
+    data, embeddings = data_normalization(validation=False, try_load=True)
+    validation_data, validation_embeddings = data_normalization(validation=True, try_load=False)
+
+    model.fit(data, embeddings)
+
+    precision_sum = 0
+    recall_sum = 0
+    mrr_sum = 0
+    acc_sum = 0
+    diversity_sum = 0
+    countable_users = 0
+    recommended_items = []
+
+    all_items = data['news']['News ID'].values
+    validation_behavior = validation_data["behaviors"]
+    processed_validation_data = helper.get_arranged_validation_data(validation_behavior, validation_data["impressions"])
+
+    for index, row in tqdm(validation_behavior.iterrows(), total=validation_behavior.shape[0], desc="Making predictions:"):
+        prediction = model.predict(row["User ID"], pd.to_datetime(row['Time']), K)
+        recommended_items.extend(prediction)
+
+        actual = (
+            processed_validation_data.loc[processed_validation_data["User ID"] == row["User ID"], "News IDs"].values[0]
+            if row["User ID"] in processed_validation_data["User ID"].values
+            else []
+        )
+
+        if len(actual) != 0:
+            countable_users += 1
+            precision_sum += helper.precision_at_k(prediction, actual, k=K)
+            recall_sum += helper.recall_at_k(prediction, actual, k=K)
+            mrr_sum += helper.mrr_at_k(prediction, actual, k=K)
+            acc_sum += helper.accuracy(prediction, actual)
+            diversity_sum += helper.calculate_diversity(prediction, data['news'])
+
+    average_precision = precision_sum / countable_users
+    print(f"Average Precision@{K}: {average_precision:.4f}")
+
+    average_recall = recall_sum / countable_users
+    print(f"Average Recall@{K}: {average_recall:.4f}")
+
+    average_mrr = mrr_sum / countable_users
+    print(f"Average MRR@{K}: {average_mrr:.4f}")
+
+    average_acc = acc_sum / countable_users
+    print(f"Average Accuracy: {average_acc:.4f}")
+
+    diversity_acc = diversity_sum / countable_users
+    print(f"Average Diversity@{K}: {diversity_acc:.4f}")
+
+    recommended_items = set(recommended_items)
+    coverage = helper.coverage(recommended_items, all_items)
+    print(f"Coverage: {coverage:.4f}")
+
+    diversity = helper.calculate_diversity(recommended_items, data["news"])
+    print(f"Average Diversity: {diversity:.4f}")
+

@@ -1,4 +1,8 @@
 import pandas as pd
+import numpy as np
+from itertools import combinations
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def split_data(df, time_col, time_window):
@@ -81,4 +85,42 @@ def mrr_at_k(predicted, actual, k=10):
         if item in actual:
             return 1.0 / rank
     return 0.0
+
+def accuracy(y_true, y_pred):
+    """
+    Computes accuracy as the proportion of correct predictions.
+    Assumes y_true and y_pred are lists or arrays of equal length.
+    """
+    correct = sum(t == p for t, p in zip(y_true, y_pred))
+    return correct / len(y_true) if y_true else 0
+
+
+def coverage(recommended_items, total_items):
+    return len(recommended_items) / len(total_items)
+
+def calculate_diversity(recommended_items, news_df):
+    news_df = news_df.copy()
+    news_df = news_df[news_df["News ID"].isin(recommended_items)]
+    news_df["content"] = news_df["Title"] + " " + news_df["Abstract"]
+    news_df["content"] = news_df["content"].fillna("")
+    vectorizer = TfidfVectorizer(max_features=20)
+    if not vectorizer:
+        return 0
+
+    article_embeddings = vectorizer.fit_transform(news_df["content"]).toarray()
+    sim_matrix = cosine_similarity(article_embeddings)
+
+    n = len(recommended_items)
+    sim_sum = 0
+    pair_count = 0
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            sim_sum += sim_matrix[i][j]
+            pair_count += 1
+
+    avg_similarity = sim_sum / pair_count if pair_count > 0 else 0
+    diversity = 1 - avg_similarity
+
+    return diversity
 
