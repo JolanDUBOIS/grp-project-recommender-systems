@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
+from sklearn.metrics.pairwise import cosine_similarity # type: ignore
 
 from src.recommender_systems import RecommenderSystem
 
@@ -19,7 +19,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
         R, user_id_mapping, news_id_mapping = self.get_user_item_interaction_matrix(data)
 
         # Get item-item similarity matrix (cosine similarity)
-        Sim = self.cosine_similarity(R)
+        Sim = cosine_similarity(R.T, dense_output=False)
 
         self.user_id_mapping = user_id_mapping
         self.news_id_mapping = news_id_mapping
@@ -48,23 +48,11 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
 
             return top_items
         except Exception as e:
-            print(f"Error in prediction: {e}")
             return super().predict(user_id, time, k)
 
     def evaluate(self):
         """ Evaluate the model on the data. """
         pass
-
-    @staticmethod
-    def cosine_similarity(R: csr_matrix, axis: int=0) -> csr_matrix:
-        """ TODO """
-        norms = np.sqrt(R.power(2).sum(axis=axis))
-        norms = np.array(norms).flatten()
-        norms[norms == 0] = 1 # Avoid division
-        similarity = R.T @ R
-        similarity = similarity.multiply(1 / norms).multiply(1 / norms.T)
-        similarity = csr_matrix(similarity)
-        return similarity
 
 if __name__ == "__main__":
     print("Running tests for ItemItemCollaborativeFiltering...")

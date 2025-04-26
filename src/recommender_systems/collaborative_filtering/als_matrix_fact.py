@@ -65,6 +65,9 @@ class ALSMatrixFactorization(RecommenderSystem):
             if self.U is None or self.V is None:
                 raise ValueError("Model not trained. Call fit() first.")
 
+            if not user_id in self.user_id_mapping:
+                return super().predict(user_id, time, k)
+
             # Get the user index
             user_idx = self.user_id_mapping[user_id]
 
@@ -90,13 +93,12 @@ class ALSMatrixFactorization(RecommenderSystem):
 
                 multiplier += 1
         except Exception as e:
-            print(f"Error in prediction: {e}")
             return super().predict(user_id, time, k)
         
     def evaluate(self):
         """ TODO """
 
-    def _update_user_factors(self, U: np.ndarray, V: np.ndarray, subset: np.ndarray=None) -> np.ndarray:
+    def _update_user_factors(self, U: np.ndarray, V: np.ndarray, R: np.array, subset: np.ndarray=None) -> np.ndarray:
         """ TODO """
         print("Update user factors")
         if subset is None:
@@ -109,7 +111,7 @@ class ALSMatrixFactorization(RecommenderSystem):
             new_U[i, :] = np.linalg.solve(V.T @ masked_V + self.REGULARIZATION_PARAMS['lambda_U'] * np.eye(self.LATENT_FACTORS), V.T @ R_i)
         return new_U
 
-    def _update_item_factors(self, U: np.ndarray, V: np.ndarray, subset: np.ndarray=None) -> np.ndarray:
+    def _update_item_factors(self, U: np.ndarray, V: np.ndarray, R: np.array, subset: np.ndarray=None) -> np.ndarray:
         """ TODO """
         print("Update item factors")
         if subset is None:

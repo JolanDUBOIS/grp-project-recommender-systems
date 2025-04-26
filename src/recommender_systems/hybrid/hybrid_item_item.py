@@ -30,8 +30,10 @@ class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
         interactions_df = pd.merge(impressions_df, behaviors_df, on='Impression ID', how='left')
         interactions_df = interactions_df[['User ID', 'News ID', 'Clicked', 'Time']]
         interactions_df['Time'] = pd.to_datetime(interactions_df['Time'])
-        interactions_df['timestamp'] = interactions_df['Time'].apply(lambda x: int(x.timestamp()))
-        
+        interactions_df['timestamp'] = interactions_df['Time'].apply(
+            lambda x: int(x.timestamp()) if pd.notnull(x) else 0
+        )
+
         user_ids = interactions_df['User ID'].unique()
         news_ids = interactions_df['News ID'].unique()
         
@@ -43,7 +45,7 @@ class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
         
         # Interaction matrix
         R = csr_matrix(
-            (interactions_df['timestamp'], (interactions_df['User Index'], interactions_df['News Index'])),
+            (interactions_df['timestamp']*interactions_df['Clicked'], (interactions_df['User Index'], interactions_df['News Index'])),
             shape=(len(user_ids), len(news_ids))
         )
 
