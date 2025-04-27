@@ -31,7 +31,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         model = BaselineMostClicked()
 
     data_buckets = helper.split_data(data['behaviors'], 'Time', TIME_WINDOW)
-    for i in range(len(data_buckets) - 1):
+    for i in range(3, len(data_buckets) - 1):
         recommended_items = []
         all_items = data['news']['News ID'].values
 
@@ -127,8 +127,9 @@ def validation_set_workflow(model_type="baseline"):
     recommended_items = []
 
     all_items = data['news']['News ID'].values
-    validation_behavior = validation_data["behaviors"]
-    processed_validation_data = helper.get_arranged_validation_data(validation_behavior, validation_data["impressions"])
+
+    validation_behavior = validation_data["behaviors_val"]
+    processed_validation_data = helper.get_arranged_validation_data(validation_behavior, validation_data["impressions_val"])
 
     for index, row in tqdm(validation_behavior.iterrows(), total=validation_behavior.shape[0], desc="Making predictions:"):
         prediction = model.predict(row["User ID"], pd.to_datetime(row['Time']), K)

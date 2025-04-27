@@ -17,7 +17,7 @@ class ALSMatrixFactorization(RecommenderSystem):
         'lambda_V': 0.1  # Regularization parameter for the item factors (L1 regularization)
         # TODO - Grid search or optima to find the best parameters
     }
-    N_ITER = 10  # Number of iterations
+    N_ITER = 20  # Number of iterations
     SPLIT = 10
     
     def __init__(self):

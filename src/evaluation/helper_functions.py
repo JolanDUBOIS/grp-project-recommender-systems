@@ -46,6 +46,7 @@ def get_arranged_validation_data(validation_bucket, impressions):
     impression_data = impressions[impressions["Impression ID"].isin(impression_ids)]
 
     df_merged = impression_data.merge(validation_bucket[["Impression ID", "User ID", "Time"]], on="Impression ID")
+    df_merged["Clicked"] = pd.to_numeric(df_merged["Clicked"], errors='coerce')
     df_merged = df_merged[df_merged["Clicked"] == 1]
 
     df_merged.drop(columns=["Impression ID", "Clicked"], inplace=True)
@@ -107,7 +108,19 @@ def calculate_diversity(recommended_items, news_df):
     if not vectorizer:
         return 0
 
-    article_embeddings = vectorizer.fit_transform(news_df["content"]).toarray()
+    news_df = news_df.dropna(subset=["content"])  # drop rows where content is NaN
+    news_df["content"] = news_df["content"].astype(str)  # force everything to string
+
+    if news_df["content"].empty:
+        return 0.0
+    else:
+        X = vectorizer.fit_transform(news_df["content"])
+
+    try:
+        article_embeddings = X.toarray()
+    except AttributeError:
+        return 0.0
+
     sim_matrix = cosine_similarity(article_embeddings)
 
     n = len(recommended_items)
