@@ -1,6 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 
+from . import logger
 import src.evaluation.helper_functions as helper
 from src.data_normalization import data_normalization
 from src.recommender_systems import (
@@ -11,6 +12,7 @@ from src.recommender_systems import (
     ContentBasedFiltering
 )
 
+
 K = 10
 
 ### takes model_type as an argument - that is the model that is being trained and tested
@@ -18,6 +20,8 @@ K = 10
 def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW=86400):
     ### a sliding window approach at training and testing
     ### meant to work for all models
+
+    logger.debug(f"Starting sliding window workflow with model_type={model_type} and TIME_WINDOW={TIME_WINDOW}.")
 
     if model_type == "baseline":
         model = BaselineMostClicked()
@@ -33,7 +37,10 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         model = BaselineMostClicked()
 
     data_buckets = helper.split_data(data['behaviors'], 'Time', TIME_WINDOW)
+    logger.debug(f"Split data into {len(data_buckets)} buckets.")
+
     for i in range(3, len(data_buckets) - 1):
+        logger.debug(f"Processing bucket {i} for training and bucket {i + 1} for validation.")
         recommended_items = []
         all_items = data['news']['News ID'].values
 
@@ -51,6 +58,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         }
 
         model.fit(training_data, embeddings)
+        logger.debug(f"Model {model_type} trained on bucket {i}.")
 
         precision_sum = 0
         recall_sum = 0
@@ -78,30 +86,32 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
                 diversity_sum += helper.calculate_diversity(prediction, data['news'])
 
         average_precision = precision_sum / countable_users
-        print(f"Average Precision@{K}: {average_precision:.4f}")
+        logger.info(f"Average Precision@{K}: {average_precision:.4f}")
 
         average_recall = recall_sum / countable_users
-        print(f"Average Recall@{K}: {average_recall:.4f}")
+        logger.info(f"Average Recall@{K}: {average_recall:.4f}")
 
         average_mrr = mrr_sum / countable_users
-        print(f"Average MRR@{K}: {average_mrr:.4f}")
+        logger.info(f"Average MRR@{K}: {average_mrr:.4f}")
 
         average_acc = acc_sum / countable_users
-        print(f"Average Accuracy: {average_acc:.4f}")
+        logger.info(f"Average Accuracy: {average_acc:.4f}")
 
         diversity_acc = diversity_sum / countable_users
-        print(f"Average Diversity@{K}: {diversity_acc:.4f}")
+        logger.info(f"Average Diversity@{K}: {diversity_acc:.4f}")
 
         recommended_items = set(recommended_items)
         coverage = helper.coverage(recommended_items, all_items)
-        print(f"Coverage: {coverage:.4f}")
+        logger.info(f"Coverage: {coverage:.4f}")
 
         diversity = helper.calculate_diversity(recommended_items, data["news"])
-        print(f"Average Diversity: {diversity:.4f}")
+        logger.info(f"Average Diversity: {diversity:.4f}")
 
 
 
 def validation_set_workflow(model_type="baseline"):
+    logger.debug(f"Starting validation set workflow with model_type={model_type}.")
+
     if model_type == "baseline":
         model = BaselineMostClicked()
     elif model_type == "als":
@@ -119,6 +129,7 @@ def validation_set_workflow(model_type="baseline"):
     validation_data, _ = data_normalization(validation=True, try_load=False)
 
     model.fit(data, embeddings)
+    logger.debug(f"Model {model_type} trained on full dataset.")
 
     precision_sum = 0
     recall_sum = 0
@@ -152,23 +163,23 @@ def validation_set_workflow(model_type="baseline"):
             diversity_sum += helper.calculate_diversity(prediction, data['news'])
 
     average_precision = precision_sum / countable_users
-    print(f"Average Precision@{K}: {average_precision:.4f}")
+    logger.info(f"Average Precision@{K}: {average_precision:.4f}")
 
     average_recall = recall_sum / countable_users
-    print(f"Average Recall@{K}: {average_recall:.4f}")
+    logger.info(f"Average Recall@{K}: {average_recall:.4f}")
 
     average_mrr = mrr_sum / countable_users
-    print(f"Average MRR@{K}: {average_mrr:.4f}")
+    logger.info(f"Average MRR@{K}: {average_mrr:.4f}")
 
     average_acc = acc_sum / countable_users
-    print(f"Average Accuracy: {average_acc:.4f}")
+    logger.info(f"Average Accuracy: {average_acc:.4f}")
 
     diversity_acc = diversity_sum / countable_users
-    print(f"Average Diversity@{K}: {diversity_acc:.4f}")
+    logger.info(f"Average Diversity@{K}: {diversity_acc:.4f}")
 
     recommended_items = set(recommended_items)
     coverage = helper.coverage(recommended_items, all_items)
-    print(f"Coverage: {coverage:.4f}")
+    logger.info(f"Coverage: {coverage:.4f}")
 
     diversity = helper.calculate_diversity(recommended_items, data["news"])
-    print(f"Average Diversity: {diversity:.4f}")
+    logger.info(f"Average Diversity: {diversity:.4f}")
