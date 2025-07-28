@@ -5,7 +5,7 @@ from . import logger
 import src.evaluation.helper_functions as helper
 from src.data_normalization import data_normalization
 from src.recommender_systems import (
-    BaselineMostClicked,
+    BaselineMostPopular,
     ALSMatrixFactorization,
     ItemItemCollaborativeFiltering,
     TrueHybrid,
@@ -24,7 +24,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
     logger.debug(f"Starting sliding window workflow with model_type={model_type} and TIME_WINDOW={TIME_WINDOW}.")
 
     if model_type == "baseline":
-        model = BaselineMostClicked()
+        model = BaselineMostPopular()
     elif model_type == "als":
         model = ALSMatrixFactorization()
     elif model_type == "itemitem":
@@ -34,7 +34,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
     elif model_type == "content_based":
         model = ContentBasedFiltering()
     else:
-        model = BaselineMostClicked()
+        model = BaselineMostPopular()
 
     data_buckets = helper.split_data(data['behaviors'], 'Time', TIME_WINDOW)
     logger.debug(f"Split data into {len(data_buckets)} buckets.")
@@ -113,7 +113,7 @@ def validation_set_workflow(model_type="baseline"):
     logger.debug(f"Starting validation set workflow with model_type={model_type}.")
 
     if model_type == "baseline":
-        model = BaselineMostClicked()
+        model = BaselineMostPopular()
     elif model_type == "als":
         model = ALSMatrixFactorization()
     elif model_type == "itemitem":
@@ -123,7 +123,7 @@ def validation_set_workflow(model_type="baseline"):
     elif model_type == "content_based":
         model = ContentBasedFiltering()
     else:
-        model = BaselineMostClicked()
+        model = BaselineMostPopular()
 
     data, embeddings = data_normalization(validation=False, try_load=True)
     validation_data, _ = data_normalization(validation=True, try_load=False)

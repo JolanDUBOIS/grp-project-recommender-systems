@@ -211,13 +211,15 @@ def data_normalization(validation: bool=False, try_load: bool=True, save: bool=F
     - If the subfolder doesn't exist, or if `try_load` is False, it normalizes the raw data and optionally saves it to the subfolder.
 
     Args:
-        validation (bool): TODO - by default we read and nomalized the training set
+        validation (bool): If True, processes the validation set; otherwise, processes the training set.
         try_load (bool): If True, attempts to load pre-normalized data from the 'data_normalized' folder. 
-                          If False, the data will be normalized regardless of the subfolder's existence.
+                         If False, the data will be normalized regardless of the subfolder's existence.
         save (bool): If True, saves the normalized data into the 'data_normalized' folder.
 
     Returns:
-        TODO
+        tuple: A tuple containing:
+            - A dictionary of normalized DataFrames, including behaviors, history, impressions, and entities.
+            - A dictionary of embeddings with keys for 'entity_embedding' and 'relation_embedding'.
     """
     logger.info("Starting data normalization process.")
     data_folder_path = get_data_folder_path()

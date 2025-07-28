@@ -10,24 +10,23 @@ from src.recommender_systems import RecommenderSystem
 
 
 class ALSMatrixFactorization(RecommenderSystem):
-    """ TODO """
+    """ Alternating Least Squares (ALS) Matrix Factorization for collaborative filtering. """
     
     LATENT_FACTORS = 10
     REGULARIZATION_PARAMS = {
         'lambda_U': 0.1,  # Regularization parameter for the user factors (L2 regularization)
         'lambda_V': 0.1  # Regularization parameter for the item factors (L1 regularization)
-        # TODO - Grid search or optima to find the best parameters
     }
     N_ITER = 20  # Number of iterations
     SPLIT = 10
     
     def __init__(self):
-        """ TODO """
+        """ Initialize the ALSMatrixFactorization model. """
         super().__init__()
         logger.debug("Initialized ALSMatrixFactorization.")
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
-        """ Fit the model to the data. """
+        """Fit the ALS model to the given data."""
         super().fit(data, embeddings)
         logger.debug("Starting model fitting.")
         self.R, self.user_id_mapping, self.news_id_mapping = self.get_user_item_interaction_matrix(data)
@@ -59,13 +58,13 @@ class ALSMatrixFactorization(RecommenderSystem):
         logger.info("Model fitting completed and saved.")
 
     def read_model(self, U_path: str, V_path: str):
-        """ Read a model """
+        """ Load pre-trained user and item factor matrices from disk. """
         self.U = np.load(U_path)
         self.V = np.load(V_path)
         logger.info("Model loaded from disk. No need to fit.")
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
-        """ TODO """
+        """ Predict top-k items for a given user at a specific time. """
         try:
             if self.U is None or self.V is None:
                 raise ValueError("Model not trained. Call fit() first.")
@@ -94,11 +93,11 @@ class ALSMatrixFactorization(RecommenderSystem):
             return super().predict(user_id, time, k)
         
     def evaluate(self):
-        """ TODO """
+        """ Evaluate the performance of the ALS model. """
         logger.debug("Evaluation method called but not implemented.")
 
     def _update_user_factors(self, U: np.ndarray, V: np.ndarray, R: np.array, subset: np.ndarray=None) -> np.ndarray:
-        """ TODO """
+        """ Update user factors using ALS optimization. """
         logger.debug("Updating user factors.")
         if subset is None:
             subset = np.arange(U.shape[0])
@@ -111,7 +110,7 @@ class ALSMatrixFactorization(RecommenderSystem):
         return new_U
 
     def _update_item_factors(self, U: np.ndarray, V: np.ndarray, R: np.array, subset: np.ndarray=None) -> np.ndarray:
-        """ TODO """
+        """ Update item factors using ALS optimization. """
         logger.debug("Updating item factors.")
         if subset is None:
             subset = np.arange(V.shape[0])
@@ -124,10 +123,8 @@ class ALSMatrixFactorization(RecommenderSystem):
         return new_V
     
     def save(self, U: np.ndarray, V: np.ndarray):
-        """ Save the model """
+        """ Save the user and item factor matrices to disk. """
         now = datetime.now().strftime("%Y-%m-%d")
         np.save(f"models/U_{now}.npy", U)
         np.save(f"models/V_{now}.npy", V)
         logger.info("Model saved to disk.")
-
-# TODO - To make the computation faster, we want to separate the users and items into small groups (time ?)
