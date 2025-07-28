@@ -4,32 +4,38 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
 
+from . import logger
+
 
 class RecommenderSystem(ABC):
     """ Abstract class for recommender systems. """
 
     def __init__(self):
-        pass
+        logger.debug("Initialized RecommenderSystem base class.")
 
     @abstractmethod
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
         """ Fit the model to the data. """
+        logger.debug("Called abstract fit method.")
         self.data = data
         self.embeddings = embeddings
 
     @abstractmethod
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
         """ TODO """
+        logger.debug(f"Called abstract predict method for user_id={user_id}, time={time}, k={k}.")
         return self.data["impressions"][self.data["impressions"]["Clicked"] == 1]["News ID"].value_counts().head(k).index.tolist()  # Most clicked
 
     @abstractmethod
     def evaluate(self):   # TODO: Add parameters to this method
         """ Evaluate the model on the data. """
+        logger.debug("Called abstract evaluate method.")
         pass
 
     @staticmethod
     def get_user_item_interaction_matrix(data: pd.DataFrame) -> tuple[csr_matrix, dict[str, int], dict[str, int]]:
         """ Get the user-item interaction matrix. """
+        logger.debug("Generating user-item interaction matrix.")
         impressions_df = data['impressions']
         behaviors_df = data['behaviors']
         
@@ -51,4 +57,5 @@ class RecommenderSystem(ABC):
             shape=(len(user_ids), len(news_ids))
         )
 
+        logger.debug("User-item interaction matrix generated successfully.")
         return R, user_id_mapping, news_id_mapping
