@@ -7,15 +7,15 @@ from src.recommender_systems import RecommenderSystem
 
 
 class ItemItemCollaborativeFiltering(RecommenderSystem):
-    """ TODO """
+    """ Item-Item Collaborative Filtering using cosine similarity. """
 
     def __init__(self):
-        """ TODO """
+        """ Initialize the ItemItemCollaborativeFiltering model. """
         super().__init__()
         logger.debug("Initialized ItemItemCollaborativeFiltering.")
 
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, np.ndarray]):
-        """ Fit the model to the data. """
+        """ Fit the model to the given data and compute similarity matrix. """
         super().fit(data, embeddings)
         logger.debug("Starting model fitting.")
         # Get the user-item interaction matrix
@@ -31,7 +31,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
         logger.debug("Model fitting completed. Interaction matrix and similarity matrix computed.")
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
-        """ Predict top-k items for a user. """
+        """ Predict top-k items for a user based on item-item similarity. """
         try:
             if self.R is None or self.Sim is None:
                 raise ValueError("Model not trained. Call fit() first.")
@@ -60,7 +60,7 @@ class ItemItemCollaborativeFiltering(RecommenderSystem):
             return super().predict(user_id, time, k)
 
     def evaluate(self):
-        """ Evaluate the model on the data. """
+        """ Evaluate the performance of the Item-Item model. """
         logger.debug("Evaluation method called but not implemented.")
 
 

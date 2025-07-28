@@ -4,15 +4,19 @@ from . import logger
 from src.recommender_systems import RecommenderSystem
 
 
-class BaselineMostClicked(RecommenderSystem):
-    """ Baseline recommender system. """
-    # TODO - Rename most popular (cf lecture 06/02)
-    # This function is a most popular with a time window which looks a bit like ring buffer but not really
+class BaselineMostPopular(RecommenderSystem):
+    """ 
+    Baseline recommender system that suggests the most clicked news items 
+    within a fixed time window before the prediction time.
+    
+    This model ignores user personalization and instead ranks items 
+    based on overall popularity in recent user behavior data.
+    """
     
     def __init__(self, N: int=24):
         """ Initialize the model. """
         self.N = N
-        logger.debug(f"Initialized BaselineMostClicked with N={self.N}.")
+        logger.debug(f"Initialized BaselineMostPopular with N={self.N}.")
     
     def fit(self, data: dict[str, pd.DataFrame], embeddings: dict[str, pd.DataFrame]):
         """ Fit the model to the data. """
@@ -39,37 +43,12 @@ class BaselineMostClicked(RecommenderSystem):
         return most_clicked_news_id
 
     def evaluate(self):
-        """ TODO """
-        logger.debug("Evaluation method called but not implemented.")
-
-
-class BaselineCoOccurence(RecommenderSystem):
-    """ TODO """
-
-
-class BaselineRingBuffer(RecommenderSystem):
-    """ TODO """
-    
-    def __init__(self):
-        """ TODO """
-        logger.debug("Initialized BaselineRingBuffer.")
-    
-    def fit(self, data: dict[str, pd.DataFrame]):
-        """ Fit the model to the data. """
-        self.data = data
-        logger.debug("Model fitted with provided data.")
-    
-    def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
-        """ TODO """
-        logger.debug(f"Predicting for user_id={user_id} at time={time} with top-k={k}.")
-    
-    def evaluate(self):
-        """ TODO """
+        """ Evaluate the model on the data. """
         logger.debug("Evaluation method called but not implemented.")
 
 
 if __name__ == "__main__":
-    logger.info("Running tests for BaselineMostClicked...")
+    logger.info("Running tests for BaselineMostPopular...")
     
     # Load data
     from src.data_normalization import data_normalization
@@ -77,9 +56,9 @@ if __name__ == "__main__":
     logger.debug("Data and embeddings loaded successfully.")
     
     # Create model
-    rs_most_clicked = BaselineMostClicked()
+    rs_most_clicked = BaselineMostPopular()
     rs_most_clicked.fit(data, embeddings)
-    logger.debug("BaselineMostClicked model fitted.")
+    logger.debug("BaselineMostPopular model fitted.")
 
     # Predict
     N = 10

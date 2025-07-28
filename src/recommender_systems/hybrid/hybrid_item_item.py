@@ -6,14 +6,15 @@ from src.recommender_systems.collaborative_filtering import ItemItemCollaborativ
 
 
 class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
-    """ TODO """
+    """ Hybrid Item-Item Collaborative Filtering with time decay. """
     
     def __init__(self):
-        """ TODO """
+        """ Initialize the HybridItemItemCollabFiltering model. """
         super().__init__()
         logger.debug("Initialized HybridItemItemCollabFiltering.")
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
+        """ Predict top-k items for a user with time-decayed interactions. """
         logger.debug(f"Predicting for user_id={user_id} at time={time} with top-k={k}.")
         timestp = int(time.timestamp())
         self.R.data = abs(self.R.data - timestp) / (3600 * 24)
@@ -22,12 +23,12 @@ class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
         return super().predict(user_id, time, k)
 
     def evaluate(self):
-        """ Evaluate the model on the data. """
+        """ Evaluate the performance of the Hybrid Item-Item model. """
         logger.debug("Evaluation method called but not implemented.")
 
     @staticmethod
     def get_user_item_interaction_matrix(data: pd.DataFrame) -> tuple[csr_matrix, dict[str, int], dict[str, int]]:
-        """ Get the user-item interaction matrix. """
+        """ Generate the user-item interaction matrix with time decay. """
         logger.debug("Generating user-item interaction matrix.")
         impressions_df = data['impressions']
         behaviors_df = data['behaviors']

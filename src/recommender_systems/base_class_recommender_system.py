@@ -22,12 +22,12 @@ class RecommenderSystem(ABC):
 
     @abstractmethod
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
-        """ TODO """
+        """ Generate a list of recommended items for a given user. """
         logger.debug(f"Called abstract predict method for user_id={user_id}, time={time}, k={k}.")
         return self.data["impressions"][self.data["impressions"]["Clicked"] == 1]["News ID"].value_counts().head(k).index.tolist()  # Most clicked
 
     @abstractmethod
-    def evaluate(self):   # TODO: Add parameters to this method
+    def evaluate(self):
         """ Evaluate the model on the data. """
         logger.debug("Called abstract evaluate method.")
         pass

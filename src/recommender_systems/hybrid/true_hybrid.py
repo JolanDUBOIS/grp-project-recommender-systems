@@ -9,10 +9,10 @@ from . import logger
 
 
 class TrueHybrid(RecommenderSystem):
-    """ TODO """
+    """ True Hybrid Recommender combining collaborative and content-based filtering. """
     
     def __init__(self, alpha: float = 0.5):
-        """ TODO """
+        """ Initialize the TrueHybrid model with a weight for combining predictions. """
         super().__init__()
         self.alpha = alpha  # Weight for combining predictions
         self.cf_model = ItemItemCollaborativeFiltering()
@@ -31,7 +31,7 @@ class TrueHybrid(RecommenderSystem):
         logger.debug("Model fitting completed.")
 
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
-        """ Predict top-k items for a user. """
+        """ Predict top-k items for a user by combining collaborative and content-based scores. """
         try:
             logger.debug(f"Predicting for user_id={user_id} at time={time} with top-k={k}.")
             # Get top-100 recommendations from each model (many, to ensure overlap)
@@ -67,12 +67,12 @@ class TrueHybrid(RecommenderSystem):
             return self.cf_model.predict(user_id, time, k)
 
     def evaluate(self):
-        """ Evaluate the model on the data. """
+        """ Evaluate the performance of the True Hybrid model. """
         logger.debug("Evaluation method called but not implemented.")
 
     @staticmethod
     def get_user_item_interaction_matrix(data: pd.DataFrame) -> tuple[csr_matrix, dict[str, int], dict[str, int]]:
-        """ Get the user-item interaction matrix. """
+        """ Generate the user-item interaction matrix. """
         logger.debug("Generating user-item interaction matrix.")
         impressions_df = data['impressions']
         behaviors_df = data['behaviors']
