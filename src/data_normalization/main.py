@@ -4,6 +4,8 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
+from . import logger
+
 
 load_dotenv()
 
@@ -38,11 +40,14 @@ def get_data_folder_path() -> Path:
     try:
         data_folder_path = Path(os.getenv("MIND_DATA_FOLDER_PATH"))
     except TypeError:
+        logger.error("DATA_FOLDER_PATH environment variable is not set.")
         raise TypeError("DATA_FOLDER_PATH environment variable is not set.")
 
     if not data_folder_path.exists():
+        logger.error(f"Data folder not found at {data_folder_path}")
         raise FileNotFoundError(f"Data folder not found at {data_folder_path}")
 
+    logger.debug(f"Data folder path resolved: {data_folder_path}")
     return data_folder_path
 
 def read_tsv(file_path: Path, columns: list[str]) -> pd.DataFrame:
@@ -59,8 +64,13 @@ def read_tsv(file_path: Path, columns: list[str]) -> pd.DataFrame:
     Raises:
         FileNotFoundError: If the file does not exist at the specified path.
     """
+    if not file_path.exists():
+        logger.error(f"TSV file not found at {file_path}")
+        raise FileNotFoundError(f"TSV file not found at {file_path}")
 
+    logger.debug(f"Reading TSV file from {file_path}")
     df = pd.read_csv(file_path, sep="\t", header=None, names=columns)
+    logger.info(f"TSV file {file_path} read successfully with {len(df)} rows.")
     return df
 
 def read_embedding(file_path: Path) -> dict:
@@ -76,12 +86,18 @@ def read_embedding(file_path: Path) -> dict:
     Raises:
         FileNotFoundError: If the embedding file does not exist at the specified path.
     """
+    if not file_path.exists():
+        logger.error(f"Embedding file not found at {file_path}")
+        raise FileNotFoundError(f"Embedding file not found at {file_path}")
+
+    logger.debug(f"Reading embedding file from {file_path}")
     with open(file_path) as f:
         lines = f.readlines()
     embedding = {}
     for line in lines:
         line = line.strip().split()
         embedding[line[0]] = list(map(float, line[1:]))
+    logger.info(f"Embedding file {file_path} read successfully with {len(embedding)} entries.")
     return embedding
 
 def read_raw_data(data_folder_path: Path, only_embeddings: bool=False, suffix: str='') -> tuple[dict[str, pd.DataFrame], dict[str, dict]]:
@@ -108,15 +124,20 @@ def read_raw_data(data_folder_path: Path, only_embeddings: bool=False, suffix: s
         for file_key, file_info in MIND_DATA_FILES.items():
             file_path = data_folder_path / file_info["filename"]
             if not file_path.exists():
+                logger.error(f"File not found at {file_path}")
                 raise FileNotFoundError(f"File not found at {file_path}")
+            logger.debug(f"Reading data file {file_path}")
             data[f"{file_key}{suffix}"] = read_tsv(file_path, file_info["columns"])
 
     for file_key, file_info in MIND_EMBEDDING_FILES.items():
         file_path = data_folder_path / file_info["filename"]
         if not file_path.exists():
+            logger.error(f"File not found at {file_path}")
             raise FileNotFoundError(f"File not found at {file_path}")
+        logger.debug(f"Reading embedding file {file_path}")
         embeddings[f"{file_key}{suffix}"] = read_embedding(file_path)
 
+    logger.info("Raw data and embeddings read successfully.")
     return data, embeddings
 
 def normalize_behavior(data: dict[str, pd.DataFrame], suffix: str='') -> dict[str, pd.DataFrame]:
@@ -198,6 +219,7 @@ def data_normalization(validation: bool=False, try_load: bool=True, save: bool=F
     Returns:
         TODO
     """
+    logger.info("Starting data normalization process.")
     data_folder_path = get_data_folder_path()
     save_subfolder = data_folder_path / 'data_normalized'
     mind_subfolder = SMALL_MIND_SETS["validation"] if validation else SMALL_MIND_SETS["train"]
@@ -205,20 +227,25 @@ def data_normalization(validation: bool=False, try_load: bool=True, save: bool=F
     suffix = "_val" if validation else ""
 
     if try_load and save_subfolder.exists() and save_subfolder.is_dir():
+        logger.info("Attempting to load pre-normalized data.")
         data = {}
         for file in save_subfolder.iterdir():
             if file.is_file() and file.suffix == ".csv":
+                logger.debug(f"Loading normalized data from {file}")
                 data[file.stem] = pd.read_csv(file)
         _, embeddings = read_raw_data(read_subfolder, only_embeddings=True, suffix=suffix)
-
     else:
+        logger.info("Pre-normalized data not found or loading skipped. Normalizing raw data.")
         data, embeddings = read_raw_data(read_subfolder, suffix=suffix)
         data = normalize_behavior(data, suffix=suffix)
         data = normalize_news(data, suffix=suffix)
 
         if save:
+            logger.info("Saving normalized data to disk.")
             save_subfolder.mkdir(parents=True, exist_ok=True)
             for key, df in data.items():
+                logger.debug(f"Saving {key} to {save_subfolder / f'{key}.csv'}")
                 df.to_csv(save_subfolder / f"{key}.csv", index=False)
 
+    logger.info("Data normalization process completed.")
     return data, embeddings
