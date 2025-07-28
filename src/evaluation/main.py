@@ -1,13 +1,15 @@
 import pandas as pd
-
-from src.recommender_systems.baseline import BaselineMostClicked
-from src.recommender_systems.collaborative_filtering.als_matrix_fact import ALSMatrixFactorization
-from src.recommender_systems.collaborative_filtering.item_item import ItemItemCollaborativeFiltering
-from src.recommender_systems.hybrid.true_hybrid import TrueHybrid
-from src.recommender_systems.feature_based.content_similarity import ContentBasedFiltering
-from src.data_normalization import data_normalization
-import src.evaluation.helper_functions as helper
 from tqdm import tqdm
+
+import src.evaluation.helper_functions as helper
+from src.data_normalization import data_normalization
+from src.recommender_systems import (
+    BaselineMostClicked,
+    ALSMatrixFactorization,
+    ItemItemCollaborativeFiltering,
+    TrueHybrid,
+    ContentBasedFiltering
+)
 
 K = 10
 
@@ -57,7 +59,7 @@ def sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW
         diversity_sum = 0
         countable_users = 0
 
-        for index, row in tqdm(validation_bucket.iterrows(), total=validation_bucket.shape[0], desc="Making predictions:"):
+        for _, row in tqdm(validation_bucket.iterrows(), total=validation_bucket.shape[0], desc="Making predictions:"):
             prediction = model.predict(row["User ID"], row['Time'], K)
             recommended_items.extend(prediction)
 
@@ -114,7 +116,7 @@ def validation_set_workflow(model_type="baseline"):
         model = BaselineMostClicked()
 
     data, embeddings = data_normalization(validation=False, try_load=True)
-    validation_data, validation_embeddings = data_normalization(validation=True, try_load=False)
+    validation_data, _ = data_normalization(validation=True, try_load=False)
 
     model.fit(data, embeddings)
 
@@ -131,7 +133,7 @@ def validation_set_workflow(model_type="baseline"):
     validation_behavior = validation_data["behaviors_val"]
     processed_validation_data = helper.get_arranged_validation_data(validation_behavior, validation_data["impressions_val"])
 
-    for index, row in tqdm(validation_behavior.iterrows(), total=validation_behavior.shape[0], desc="Making predictions:"):
+    for _, row in tqdm(validation_behavior.iterrows(), total=validation_behavior.shape[0], desc="Making predictions:"):
         prediction = model.predict(row["User ID"], pd.to_datetime(row['Time']), K)
         recommended_items.extend(prediction)
 
@@ -170,4 +172,3 @@ def validation_set_workflow(model_type="baseline"):
 
     diversity = helper.calculate_diversity(recommended_items, data["news"])
     print(f"Average Diversity: {diversity:.4f}")
-
