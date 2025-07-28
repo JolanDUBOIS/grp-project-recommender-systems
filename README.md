@@ -1,44 +1,102 @@
-# Data Normalization
+# News Recommendation System (MIND Dataset)
 
-This part of the data pipeline enables raw data to be normalized in an easy-to-use relational database.
+This project explores different recommender system approaches using Microsoft's [MIND dataset](https://msnews.github.io/). The system is structured around a clean data pipeline, multiple recommendation models, and evaluation workflows.
 
-## Overview of the Code
+It was developed as a two-month group assignment for the **Recommender Systems** course at **NTNU** (Norwegian University of Science and Technology).  
+The goal was to implement, evaluate, and compare recommender systems through modular and extensible Python code.
 
-- The `data_normalization` function processes raw data from the MIND dataset. It loads the raw data, normalizes it (splits history and impressions, normalizes news titles and abstracts), and then optionally saves the processed data for future use.
-- The dataset includes two main parts: news data and behavior data (user interactions with news items).
-- Embedding files are also read into dictionaries to store entity and relation embeddings.
-- The processed data can be saved in a folder called `data_normalized` for reuse, avoiding the need to reprocess the raw data.
+## Dataset
 
-## Command-Line Inferface (CLI)
+This project uses the [MIND dataset](https://msnews.github.io/), which includes:
+- **User behavior logs**: Clicks, timestamps, impressions
+- **News metadata**: Titles, abstracts, categories
+- **Knowledge embeddings**: Entity and relation vectors
 
-To run the script for data normalization, you need to use the command-line interface. The main entry point is `__main__.py`, which handles the arguments and triggers the normalization process. You can use one of the following commands:
-
-```bash
-python -m src -dn
-python -m src --data-normalization
-```
-
-**Optional arguments:**
-- `--validation` or `-val`: if specified, the script will normalize the validation data instead of the training data.
-
-## Key Steps in the Normalization Process:
-
-1. Read Raw Data: The raw data (news, behaviors, and embeddings) is read from the MIND dataset.
-
-2. Normalize Behaviors: The "History" and "Impressions" columns are expanded to split space-separated values into lists and rows.
-
-3. Normalize News: The "Title Entities" and "Abstract Entities" columns are parsed, expanding entity lists into rows and normalizing nested entities.
-
-4. Save Processed Data: The processed data is saved as CSV files in the data_normalized folder if the save flag is enabled.
-
-## Additional Information
-
-**Flexibility**: The normalization process can be skipped by setting `try_load=True` and providing pre-processed data in the data_normalized folder.
-
-**Environment Variables**: The script expects an environment variable `MIND_DATA_FOLDER_PATH` to specify the location of the MIND dataset on your system. To set the environment variable, create a `.env` file and write:
+To run the project, set the dataset path via an environment variable:
 
 ```bash
-export MIND_DATA_FOLDER_PATH="path/to/the/folder"
+export MIND_DATA_FOLDER_PATH="path/to/mind/data"
 ```
 
-Then, execute the command `source .env`.
+Or set it in a `.env` file and run `source .env`.
+
+## Project Structure
+
+The code is organized into three main components:
+
+### 1. `data_normalization/`
+Prepares raw MIND data for modeling:
+- Parses and normalizes `impressions.tsv`, `behaviors.tsv`, and `news.tsv`
+- Structures user/news interactions for downstream processing
+- Loads optional embeddings for content-based models
+- Saves outputs for reuse in `data_normalized/` (if enabled)
+
+This step is required before any model training or evaluation.
+
+→ See [`data_normalization/README.md`](./src/data_normalization/README.md) for full documentation.
+
+---
+
+### 2. `recommender_systems/`
+Implements multiple models, all following a shared interface:
+- **BaselineMostPopular** — recommends globally popular items within a recent time window
+- **ItemItemCollaborativeFiltering**
+- **ALSMatrixFactorization**
+- **ContentBasedFiltering** — leverages news metadata and embeddings
+- **TrueHybrid** — combines collaborative and content-based predictions
+
+Models are evaluated uniformly and can be swapped easily.
+
+---
+
+### 3. `evaluation/`
+Handles evaluation logic:
+- **Sliding window** evaluation using temporal splits
+- **Validation set** workflows
+- Computes **multiple metrics** (Precision, Recall, MRR, Accuracy, Coverage, Diversity)
+
+Evaluation outputs are logged cleanly and stored for comparison.
+
+## Running the Code
+
+Run from the project root using the CLI:
+
+```bash
+python -m src -dn           # Normalize training data
+python -m src -dn -val      # Normalize validation data
+python -m src -t            # Run evaluations or experiments
+```
+
+**CLI arguments:**
+- `--data-normalization` (`-dn`): Run the data processing pipeline
+- `--validation` (`-val`): Apply to validation set
+- `--test` (`-t`): Launch testing/evaluation workflow
+
+All logic is defined in [`src/__main__.py`](./src/__main__.py).
+
+## Evaluation Metrics
+
+Models are assessed using both static and time-aware strategies. Computed metrics include:
+
+- Precision@10
+- Recall@10
+- Mean Reciprocal Rank (MRR)
+- Accuracy
+- Coverage
+- Diversity
+
+Results are logged using Python's `logging` module for clarity and reproducibility.
+
+## Project Status
+
+This project is **academic and exploratory**. The models are functional but not optimized for production deployment. Some components are still experimental or simplified.
+
+That said, the structure is clean and extensible for testing new approaches or integrating external models.
+
+## Acknowledgments
+
+This work was done as part of the “**Recommender Systems**” course at **NTNU**, over a 2-month period.
+
+## License
+
+This code is for educational purposes only. No formal license is attached.
