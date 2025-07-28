@@ -1,0 +1,53 @@
+version: 1
+
+
+formatters:
+  simple:
+    format: "%(asctime)s [%(levelname)s] %(message)s"
+    datefmt: "%H:%M:%S"
+
+  detailed:
+    format: "%(asctime)s [%(levelname)s] [%(name)s] [%(filename)s:%(lineno)d] (%(funcName)s) - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console_handler:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: simple
+
+  file_debug_handler:
+    class: logging.FileHandler
+    filename: logs/DEBUG.log
+    level: DEBUG
+    formatter: detailed
+
+loggers:
+  # Data Normalization
+  src.data_normalization:
+    level: DEBUG
+
+  # Evaluation
+  src.evaluation:
+    level: DEBUG
+
+  # Recommender Systems
+  src.recommender_systems:
+    level: DEBUG
+
+  src.recommender_systems.baseline:
+    level: DEBUG
+
+  src.recommender_systems.collaborative_filtering:
+    level: DEBUG
+
+  src.recommender_systems.feature_based:
+    level: DEBUG
+
+  src.recommender_systems.hybrid:
+    level: DEBUG
+
+root:
+  level: DEBUG
+  handlers: [console_handler, file_debug_handler]
+  propagate: false

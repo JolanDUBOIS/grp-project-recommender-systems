@@ -1,29 +1,35 @@
 import pandas as pd
 from scipy.sparse import csr_matrix, diags
 
+from . import logger
 from src.recommender_systems.collaborative_filtering import ItemItemCollaborativeFiltering
 
 
 class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
-    """ TODO """
+    """ Hybrid Item-Item Collaborative Filtering with time decay. """
     
     def __init__(self):
-        """ TODO """
+        """ Initialize the HybridItemItemCollabFiltering model. """
         super().__init__()
-    
+        logger.debug("Initialized HybridItemItemCollabFiltering.")
+
     def predict(self, user_id: str, time: pd.Timestamp, k: int=10) -> list[str]:
+        """ Predict top-k items for a user with time-decayed interactions. """
+        logger.debug(f"Predicting for user_id={user_id} at time={time} with top-k={k}.")
         timestp = int(time.timestamp())
         self.R.data = abs(self.R.data - timestp) / (3600 * 24)
         self.R.data = 1 / self.R.data
+        logger.debug("Adjusted interaction matrix with time decay.")
         return super().predict(user_id, time, k)
 
     def evaluate(self):
-        """ Evaluate the model on the data. """
-        pass
+        """ Evaluate the performance of the Hybrid Item-Item model. """
+        logger.debug("Evaluation method called but not implemented.")
 
     @staticmethod
     def get_user_item_interaction_matrix(data: pd.DataFrame) -> tuple[csr_matrix, dict[str, int], dict[str, int]]:
-        """ Get the user-item interaction matrix. """
+        """ Generate the user-item interaction matrix with time decay. """
+        logger.debug("Generating user-item interaction matrix.")
         impressions_df = data['impressions']
         behaviors_df = data['behaviors']
         
@@ -45,39 +51,40 @@ class HybridItemItemCollabFiltering(ItemItemCollaborativeFiltering):
         
         # Interaction matrix
         R = csr_matrix(
-            (interactions_df['timestamp']*interactions_df['Clicked'], (interactions_df['User Index'], interactions_df['News Index'])),
+            (interactions_df['timestamp'] * interactions_df['Clicked'], (interactions_df['User Index'], interactions_df['News Index'])),
             shape=(len(user_ids), len(news_ids))
         )
-
+        logger.debug("User-item interaction matrix generated.")
         return R, user_id_mapping, news_id_mapping
 
+
 if __name__ == "__main__":
-    print("Running tests for HybridItemItemCollabFiltering...")
+    logger.info("Running tests for HybridItemItemCollabFiltering...")
 
     # Load data
     from src.data_normalization import data_normalization
     data, embeddings = data_normalization(validation=False, try_load=True)
+    logger.debug("Data and embeddings loaded successfully.")
 
     # Create model
     rs_hybrid = HybridItemItemCollabFiltering()
     rs_item_item = ItemItemCollaborativeFiltering()
 
     # Fit model
-    print("Fitting model...")
+    logger.info("Fitting models...")
     rs_hybrid.fit(data, embeddings)
     rs_item_item.fit(data, embeddings)
-    print("Model fitted.")
+    logger.info("Models fitted.")
 
     # Predict
     N = 10
     user_ids = data["behaviors"]["User ID"].drop_duplicates().sample(n=N, random_state=42)
+    logger.info(f"Predicting for {N} users...")
 
-    print(f"Predicting for {N} users...")
     for user_id in user_ids:
-        print(f"User ID: {user_id}")
-        print("Hybrid Item-Item Collaborative Filtering:")
-        print(rs_hybrid.predict(user_id, pd.Timestamp.now()))
-        print("Item-Item Collaborative Filtering:")
-        print(rs_item_item.predict(user_id, pd.Timestamp.now()))
-        print()
+        logger.info(f"User ID: {user_id}")
+        hybrid_predictions = rs_hybrid.predict(user_id, pd.Timestamp.now())
+        logger.info(f"Hybrid Item-Item Collaborative Filtering Predictions: {hybrid_predictions}")
+        item_item_predictions = rs_item_item.predict(user_id, pd.Timestamp.now())
+        logger.info(f"Item-Item Collaborative Filtering Predictions: {item_item_predictions}")
 

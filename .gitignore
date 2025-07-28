@@ -1,4 +1,4 @@
 .env
 __pycache__
-poetry.lock
-jolan/
+notebooks/
+logs/

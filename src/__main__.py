@@ -1,7 +1,9 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import argparse
 
 from src.data_normalization import data_normalization
-from src.recommender_systems.collaborative_filtering import ALSMatrixFactorization
 import src.evaluation.main as evaluation_module
 
 
@@ -23,7 +25,8 @@ if __name__ == "__main__":
         data, embeddings = data_normalization(validation=args.validation, try_load=False, save=True)
     
     if args.test:
-        print("Running data normalization...")
+        logger.info("Running data normalization...")
         data, embeddings = data_normalization(validation=False, try_load=True)
-        print("Running validation")
-        evaluation_module.validation_set_workflow(model_type="baseline")
+        logger.info("Running validation")
+        ##evaluation_module.validation_set_workflow(model_type="itemitem")
+        evaluation_module.sliding_window_workflow(data, embeddings, model_type="baseline", TIME_WINDOW=86400)
